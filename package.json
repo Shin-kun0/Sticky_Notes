@@ -1,0 +1,25 @@
+{
+  "name": "sticky-notes",
+  "version": "1.0.0",
+  "description": "Sticky Notes Desktop Application",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview"
+  },
+  "dependencies": {
+    "@fontsource/caveat": "^5.2.8",
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/kalam": "^5.2.8",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.5.2",
+    "electron": "^36.3.0",
+    "electron-vite": "^3.1.0",
+    "jimp": "^0.16.13",
+    "vite": "^6.3.0"
+  }
+}

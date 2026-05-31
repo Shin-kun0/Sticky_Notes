@@ -1,0 +1,146 @@
+/* ================================================================
+   STICKY NOTES — Desktop Note Overlay Styles
+   Frameless, transparent window with sticky-note aesthetic:
+   drop shadow, folded corner, paper texture.
+   ================================================================ */
+
+/* ── Font Faces ────────────────────────────────────────────────── */
+@import '@fontsource/caveat/400.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/kalam/400.css';
+
+/* ── Base ──────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html, body {
+  background: transparent;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Note Container ────────────────────────────────────────────── */
+.desktop-note {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  border-radius: 3px 3px 3px 0;
+  padding: 20px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 3px 4px 12px rgba(0, 0, 0, 0.18);
+  -webkit-app-region: drag;
+  cursor: default;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Subtle paper grain texture */
+.desktop-note::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 3px 3px 3px 0;
+  opacity: 0.35;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 28px,
+      rgba(0, 0, 0, 0.018) 28px,
+      rgba(0, 0, 0, 0.018) 29px
+    );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Folded corner effect */
+.desktop-note::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 0 22px 22px;
+  z-index: 3;
+  pointer-events: none;
+  /* The triangle colour is set dynamically via inline style on a helper div,
+     but as a fallback we use a slightly darker shade via filter. */
+  border-color: transparent transparent rgba(0, 0, 0, 0.07) transparent;
+}
+
+/* ── Note Content ──────────────────────────────────────────────── */
+.desktop-note-content {
+  flex: 1;
+  overflow: hidden;
+  word-break: break-word;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  position: relative;
+  z-index: 1;
+}
+.desktop-note-content.light-text { color: rgba(255, 255, 255, 0.88); }
+.desktop-note-content.dark-text  { color: rgba(0, 0, 0, 0.72); }
+
+/* ── Close Button ──────────────────────────────────────────────── */
+.desktop-close-btn {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 150ms ease;
+  z-index: 10;
+  -webkit-app-region: no-drag;
+}
+.desktop-close-btn.light-btn {
+  background: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+}
+.desktop-close-btn.light-btn:hover {
+  background: rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+.desktop-close-btn.dark-btn {
+  background: rgba(0, 0, 0, 0.15);
+  color: rgba(0, 0, 0, 0.6);
+}
+.desktop-close-btn.dark-btn:hover {
+  background: rgba(0, 0, 0, 0.3);
+  color: rgba(0, 0, 0, 0.9);
+}
+
+/* ── Sketch Animation ──────────────────────────────────────────── */
+.sketch-icon {
+  position: absolute;
+  bottom: 25px;
+  right: 25px;
+  width: 45px;
+  height: 45px;
+  opacity: 0.8;
+  z-index: 2;
+  pointer-events: none;
+  animation: sketchBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes sketchBounce {
+  0% { transform: scale(0) rotate(-20deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
