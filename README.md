@@ -7,10 +7,11 @@ A premium, modern desktop sticky notes application built with Electron, React, a
 ## Features
 
 - **Dual-Interface Design**: 
-  - **Manager Window**: A beautiful, glassmorphic dark-themed dashboard to create, edit, and manage all your notes in a responsive grid.
+  - **Manager Window**: A beautiful dashboard to create, edit, and manage all your notes in a responsive Grid or List view. Supports custom high-resolution backgrounds.
   - **Desktop Overlays**: Individual sticky notes that float directly on your desktop. They are frameless, transparent, and have a subtle paper texture with folded corners.
 - **Always on Top**: Pin notes so they float above all your open applications.
 - **Customization**:
+  - Global UI Scaling: Zoom the interface from -30% to +50% (or custom) without breaking the layout or background.
   - 6 preset pastel colors plus a custom RGB color picker.
   - Multiple bundled handwriting and system fonts (Caveat, Inter, Courier New, Kalam).
   - Select between Small, Medium, Large, or define pixel-perfect Custom Dimensions (Width × Height).

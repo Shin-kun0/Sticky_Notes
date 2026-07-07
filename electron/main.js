@@ -1,5 +1,6 @@
-import { app, BrowserWindow, ipcMain, screen } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage } from 'electron'
 import path from 'path'
+import appIconAsset from '../src/assets/app-icon.png?asset'
 import { loadData, saveData } from './storage.js'
 
 // ────────────────────────────────────────────────────────
@@ -8,6 +9,7 @@ import { loadData, saveData } from './storage.js'
 let mainWindow = null
 const desktopWindows = new Map() // noteId → BrowserWindow
 let appData = null
+let tray = null
 
 function getPreloadPath() {
   return path.join(__dirname, '../preload/index.js')
@@ -23,6 +25,7 @@ function createMainWindow() {
     minWidth: 520,
     minHeight: 400,
     title: 'Sticky Notes',
+    icon: appIconAsset,
     backgroundColor: '#0a0a14',
     show: false,
     webPreferences: {
@@ -233,6 +236,26 @@ app.whenReady().then(() => {
       if (note.showOnDesktop) createDesktopNoteWindow(note)
     }
   }
+
+  // Setup Tray
+  const trayIcon = nativeImage.createFromPath(appIconAsset)
+  tray = new Tray(trayIcon)
+  tray.setToolTip('Sticky Notes')
+
+  const contextMenu = Menu.buildFromTemplate([
+    { label: 'Open Sticky Notes', click: () => {
+      if (mainWindow === null) createMainWindow()
+      else { mainWindow.show(); mainWindow.focus(); }
+    }},
+    { type: 'separator' },
+    { label: 'Quit', click: () => app.quit() }
+  ])
+  tray.setContextMenu(contextMenu)
+
+  tray.on('click', () => {
+    if (mainWindow === null) createMainWindow()
+    else { mainWindow.show(); mainWindow.focus(); }
+  })
 })
 
 app.on('window-all-closed', () => {

@@ -9,7 +9,10 @@ const DEFAULT_SETTINGS = {
   defaultNoteSize: 'medium',
   defaultCustomWidth: 220,
   defaultCustomHeight: 220,
-  defaultAlwaysOnTop: false
+  defaultAlwaysOnTop: false,
+  backgroundImage: 'none',
+  uiScale: 'default',
+  uiScaleCustom: 100
 }
 
 /**
@@ -84,6 +87,7 @@ export function useNotes() {
       customHeight: settings.defaultCustomHeight,
       showOnDesktop: false,
       lockedOnDesktop: false,
+      isPinned: false,
       alwaysOnTop: settings.defaultAlwaysOnTop,
       desktopX: 100 + Math.floor(Math.random() * 300),
       desktopY: 100 + Math.floor(Math.random() * 300),
@@ -150,6 +154,17 @@ export function useNotes() {
     )
   }, [])
 
+  // ── Toggle pin ─────────────────────────────────────
+  const togglePin = useCallback((id) => {
+    setNotes(prev =>
+      prev.map(n =>
+        n.id === id
+          ? { ...n, isPinned: !n.isPinned, updatedAt: new Date().toISOString() }
+          : n
+      )
+    )
+  }, [])
+
   // ── Save settings ─────────────────────────────────
   const updateSettings = useCallback(async (newSettings) => {
     setSettings(newSettings)
@@ -165,6 +180,7 @@ export function useNotes() {
     deleteNote,
     toggleShowOnDesktop,
     toggleLock,
+    togglePin,
     updateSettings
   }
 }

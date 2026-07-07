@@ -18,6 +18,7 @@ export default function NoteCard({
   onClick,
   onToggleDesktop,
   onToggleLock,
+  onTogglePin,
   onDelete
 }) {
   const [showConfirm, setShowConfirm] = useState(false)
@@ -53,8 +54,16 @@ export default function NoteCard({
         </div>
       )}
 
-      {/* Header: lock (left) + pin (right) */}
+      {/* Header: star and lock (left), desktop pin (right) */}
       <div className="note-card-header">
+        <button
+          className={`card-btn star-btn ${note.isPinned ? 'active' : ''}`}
+          onClick={stop(onTogglePin)}
+          title={note.isPinned ? 'Unpin note' : 'Pin note to top'}
+        >
+          {note.isPinned ? '⭐' : '☆'}
+        </button>
+
         <button
           className={`card-btn lock-btn ${note.showOnDesktop ? 'visible' : ''} ${note.lockedOnDesktop ? 'active' : ''}`}
           onClick={stop(onToggleLock)}
@@ -63,6 +72,8 @@ export default function NoteCard({
         >
           {note.lockedOnDesktop ? '🔒' : '🔓'}
         </button>
+
+        <div style={{ flex: 1 }} />
 
         <button
           className={`card-btn pin-btn ${note.showOnDesktop ? 'active' : ''}`}
