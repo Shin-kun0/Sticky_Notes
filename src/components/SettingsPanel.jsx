@@ -213,26 +213,113 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
           </div>
 
           {/* ── Background Image ────────────────────── */}
-          <div className="settings-section" title="Set a custom background image for the main app window (images must be placed in src/assets/backgrounds/)">
+          <div className="settings-section" title="Set a custom background image for the main app window">
             <span className="settings-section-title">App Background Image</span>
             <div className="background-grid">
               {BACKGROUNDS.map(bg => (
-                <button
+                <div 
                   key={bg.value}
                   className={`bg-preview-btn ${settings.backgroundImage === bg.value ? 'active' : ''}`}
                   onClick={() => update('backgroundImage', bg.value)}
+                  style={{ 
+                    backgroundImage: bg.url !== 'none' ? `url(${bg.url})` : 'none',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }}
                   title={bg.label}
-                  style={bg.value !== 'none' ? { backgroundImage: `url(./assets/backgrounds/${bg.value})` } : {}}
                 >
-                  {bg.value === 'none' && <span>None</span>}
-                </button>
+                  {bg.value === 'none' && <span className="bg-label">None</span>}
+                </div>
               ))}
+              
+              {/* Custom Backgrounds */}
+              {(settings.customBackgrounds || []).map((filename, idx) => (
+                <div 
+                  key={filename}
+                  className={`bg-preview-btn ${settings.backgroundImage === filename ? 'active' : ''}`}
+                  onClick={() => update('backgroundImage', filename)}
+                  style={{ 
+                    backgroundImage: `url(custom-bg://${filename})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    position: 'relative'
+                  }}
+                  title={`Custom ${idx + 1}`}
+                >
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (window.api && window.api.deleteBackground) {
+                        await window.api.deleteBackground(filename);
+                        const newBgs = settings.customBackgrounds.filter(bg => bg !== filename);
+                        const newBgImage = settings.backgroundImage === filename ? 'none' : settings.backgroundImage;
+                        onSave({
+                          ...settings,
+                          customBackgrounds: newBgs,
+                          backgroundImage: newBgImage
+                        });
+                      }
+                    }}
+                    style={{
+                      position: 'absolute',
+                      top: '4px',
+                      right: '4px',
+                      background: 'rgba(0,0,0,0.5)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '20px',
+                      height: '20px',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    title="Delete Background"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+
+              {/* Upload Button */}
+              <div 
+                className="bg-preview-btn upload-bg-btn"
+                onClick={async () => {
+                  if (window.api && window.api.uploadBackground) {
+                    const res = await window.api.uploadBackground();
+                    if (res?.error) {
+                      alert(res.error);
+                    } else if (res?.filename) {
+                      const newBgs = [...(settings.customBackgrounds || []), res.filename];
+                      // Save both at once to avoid multiple renders
+                      onSave({
+                        ...settings,
+                        customBackgrounds: newBgs,
+                        backgroundImage: res.filename
+                      });
+                    }
+                  }
+                }}
+                style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'var(--bg-secondary)',
+                  border: '2px dashed var(--border)',
+                  cursor: 'pointer'
+                }}
+                title="Upload custom background image"
+              >
+                <span style={{ fontSize: '24px', opacity: 0.5 }}>+</span>
+              </div>
             </div>
           </div>
 
           {/* ── UI Scale ────────────────────────────── */}
           <div className="settings-section" title="Adjust the overall size of the application interface">
-            <span className="settings-section-title">App UI Size</span>
+            <span className="settings-section-title">Note Card Size</span>
             <select
               className="form-select"
               value={settings.uiScale}

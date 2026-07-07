@@ -1,5 +1,8 @@
-import { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage, protocol, net, dialog } from 'electron'
 import path from 'path'
+import fs from 'fs'
+import crypto from 'crypto'
+import url from 'url'
 import appIconAsset from '../src/assets/app-icon.png?asset'
 import { loadData, saveData } from './storage.js'
 
@@ -120,6 +123,19 @@ function createDesktopNoteWindow(note) {
     }
   })
 
+  // Persist size after resize
+  noteWin.on('resized', () => {
+    if (noteWin.isDestroyed()) return
+    const [nw, nh] = noteWin.getSize()
+    const idx = appData.notes.findIndex(n => n.id === note.id)
+    if (idx !== -1) {
+      appData.notes[idx].customWidth = nw
+      appData.notes[idx].customHeight = nh
+      appData.notes[idx].noteSize = 'custom'
+      saveData(appData)
+    }
+  })
+
   noteWin.on('closed', () => {
     desktopWindows.delete(note.id)
   })
@@ -181,6 +197,19 @@ function setupIPC() {
     app.setLoginItemSettings({ openAtLogin: !!settings.launchOnStartup })
   })
 
+  // Synchronous saves to guarantee data writes when the window unloads
+  ipcMain.on('settings:saveSync', (event, settings) => {
+    appData.settings = settings
+    saveData(appData)
+    event.returnValue = true
+  })
+
+  ipcMain.on('notes:saveSync', (event, notes) => {
+    appData.notes = notes
+    saveData(appData)
+    event.returnValue = true
+  })
+
   // Show a note on the desktop
   ipcMain.handle('desktop:show', (_, noteId) => {
     const note = appData.notes.find(n => n.id === noteId)
@@ -220,12 +249,130 @@ function setupIPC() {
   ipcMain.handle('startup:set', (_, enabled) => {
     app.setLoginItemSettings({ openAtLogin: !!enabled })
   })
+
+  // Upload Custom Background
+  ipcMain.handle('upload-background', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Select Custom Background',
+      filters: [{ name: 'Images', extensions: ['jpg', 'png', 'jpeg', 'webp'] }],
+      properties: ['openFile']
+    })
+
+    if (result.canceled || result.filePaths.length === 0) return null
+
+    const filePath = result.filePaths[0]
+    const stat = fs.statSync(filePath)
+    
+    // 5MB limit to prevent memory bloat and slow down
+    if (stat.size > 5 * 1024 * 1024) {
+      return { error: 'File size must be under 5MB.' }
+    }
+
+    const userDataDir = app.getPath('userData')
+    const bgDir = path.join(userDataDir, 'custom-backgrounds')
+    if (!fs.existsSync(bgDir)) fs.mkdirSync(bgDir, { recursive: true })
+
+    const ext = path.extname(filePath)
+    const filename = crypto.randomUUID() + ext
+    const dest = path.join(bgDir, filename)
+
+    fs.copyFileSync(filePath, dest)
+
+    return { filename }
+  })
+
+  // Delete Custom Background
+  ipcMain.handle('delete-background', (_, filename) => {
+    try {
+      const userDataDir = app.getPath('userData')
+      const targetPath = path.join(userDataDir, 'custom-backgrounds', filename)
+      if (fs.existsSync(targetPath)) {
+        fs.unlinkSync(targetPath)
+        return { success: true }
+      }
+      return { error: 'File not found' }
+    } catch (err) {
+      return { error: err.message }
+    }
+  })
+
+  // Export Notes Backup
+  ipcMain.handle('notes:export', async () => {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Export Sticky Notes Backup',
+      defaultPath: 'sticky-notes-backup.sticky',
+      filters: [{ name: 'Sticky Notes Backup', extensions: ['sticky', 'json'] }]
+    })
+
+    if (result.canceled || !result.filePath) return { canceled: true }
+
+    try {
+      fs.writeFileSync(result.filePath, JSON.stringify(appData, null, 2))
+      return { success: true }
+    } catch (err) {
+      return { error: err.message }
+    }
+  })
+
+  // Export Single Note as TXT
+  ipcMain.handle('notes:exportSingle', async (_, content) => {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Export Note',
+      defaultPath: 'note.txt',
+      filters: [{ name: 'Text File', extensions: ['txt'] }]
+    })
+
+    if (result.canceled || !result.filePath) return { canceled: true }
+
+    try {
+      fs.writeFileSync(result.filePath, content, 'utf-8')
+      return { success: true }
+    } catch (err) {
+      return { error: err.message }
+    }
+  })
+
+  // Import Notes
+  ipcMain.handle('notes:import', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Import Sticky Notes Backup',
+      filters: [{ name: 'Sticky Notes Backup', extensions: ['sticky', 'json'] }],
+      properties: ['openFile']
+    })
+
+    if (result.canceled || result.filePaths.length === 0) return { canceled: true }
+
+    try {
+      const dataStr = fs.readFileSync(result.filePaths[0], 'utf-8')
+      const importedData = JSON.parse(dataStr)
+      if (!importedData.notes || !importedData.settings) {
+        return { error: 'Invalid backup file format.' }
+      }
+      
+      appData = importedData
+      saveData(appData)
+      return { success: true, data: appData }
+    } catch (err) {
+      return { error: err.message }
+    }
+  })
 }
 
 // ────────────────────────────────────────────────────────
 // App Lifecycle
 // ────────────────────────────────────────────────────────
+
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'custom-bg', privileges: { secure: true, standard: true, supportFetchAPI: true, bypassCSP: true } }
+])
+
 app.whenReady().then(() => {
+  protocol.handle('custom-bg', (request) => {
+    const filename = decodeURIComponent(request.url.replace('custom-bg://', ''))
+    const fullPath = path.join(app.getPath('userData'), 'custom-backgrounds', filename)
+    return net.fetch(url.pathToFileURL(fullPath).toString())
+  })
+
   appData = loadData()
   setupIPC()
   createMainWindow()

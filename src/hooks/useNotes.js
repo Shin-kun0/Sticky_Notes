@@ -10,9 +10,13 @@ const DEFAULT_SETTINGS = {
   defaultCustomWidth: 220,
   defaultCustomHeight: 220,
   defaultAlwaysOnTop: false,
+  hasSeenPrivacy: false,
   backgroundImage: 'none',
+  customBackgrounds: [],
   uiScale: 'default',
-  uiScaleCustom: 100
+  uiScaleCustom: 100,
+  viewMode: 'grid',
+  sortOrder: 'newest'
 }
 
 /**
@@ -30,9 +34,11 @@ export function useNotes() {
 
   const saveTimerRef = useRef(null)
   const notesRef = useRef(notes)
+  const settingsRef = useRef(settings)
 
-  // Keep ref in sync so callbacks always see latest notes
+  // Keep refs in sync so callbacks always see latest state
   useEffect(() => { notesRef.current = notes }, [notes])
+  useEffect(() => { settingsRef.current = settings }, [settings])
 
   // ── Load once on mount ─────────────────────────────
   useEffect(() => {
@@ -57,7 +63,20 @@ export function useNotes() {
     const cleanup = window.api.onNoteStateChanged(({ noteId, changes }) => {
       setNotes(prev => prev.map(n => (n.id === noteId ? { ...n, ...changes } : n)))
     })
-    return cleanup
+
+    // Ensure all changes are flushed to disk synchronously when the app closes
+    const handleBeforeUnload = () => {
+      if (window.api) {
+        if (window.api.saveNotesSync) window.api.saveNotesSync(notesRef.current)
+        if (window.api.saveSettingsSync) window.api.saveSettingsSync(settingsRef.current)
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      cleanup()
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
   }, [])
 
   // ── Debounced auto-save ────────────────────────────

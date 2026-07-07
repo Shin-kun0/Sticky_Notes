@@ -3,6 +3,7 @@ import { useNotes } from './hooks/useNotes'
 import NoteCard from './components/NoteCard'
 import EditModal from './components/EditModal'
 import SettingsPanel from './components/SettingsPanel'
+import PrivacyModal from './components/PrivacyModal'
 import bg1 from './assets/backgrounds/bg-1.png?asset'
 import bg2 from './assets/backgrounds/bg-2.png?asset'
 import bg3 from './assets/backgrounds/bg-3.png?asset'
@@ -28,8 +29,6 @@ export default function App() {
 
   const [editingNoteId, setEditingNoteId] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
-  const [viewMode, setViewMode] = useState('grid')
-  const [sortOrder, setSortOrder] = useState('newest')
 
   // Derive editing note from latest notes array (always in sync)
   const editingNote = editingNoteId
@@ -52,9 +51,9 @@ export default function App() {
 
   const sortedNotes = [...notes].sort((a, b) => {
     if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
-    const dateA = new Date(a.createdAt || 0).getTime();
-    const dateB = new Date(b.createdAt || 0).getTime();
-    return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+    const aTime = new Date(a.createdAt || 0).getTime()
+    const bTime = new Date(b.createdAt || 0).getTime()
+    return settings.sortOrder === 'newest' ? bTime - aTime : aTime - bTime
   });
 
   const resolvedBg = BACKGROUND_MAP[settings.backgroundImage]
@@ -72,6 +71,9 @@ export default function App() {
     display: 'flex',
     flexDirection: 'column',
     minHeight: '100vh',
+  };
+
+  const notesStyle = {
     zoom: settings.uiScale === 'custom' 
       ? `${settings.uiScaleCustom}%` 
       : settings.uiScale === 'small' ? '70%' 
@@ -83,54 +85,49 @@ export default function App() {
   return (
     <div style={backgroundStyle}>
       <div style={appStyle} className="app-content-wrapper">
-        {/* ── Top Bar ─────────────────────────────────── */}
-      <header className="top-bar">
-        <div className="top-bar-title">
-          <span className="icon">🗒️</span>
-          <span>Sticky Notes</span>
-        </div>
-        <button
-          className="settings-btn"
-          onClick={() => setShowSettings(true)}
-          id="settings-button"
-          title="Settings"
-        >
-          ⚙
-        </button>
-      </header>
+        {/* ── Action Bar ──────────────────────────────── */}
+        <div className="action-bar" style={{ WebkitAppRegion: 'drag' }}>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', WebkitAppRegion: 'no-drag' }}>
+            <button
+              className="new-note-btn"
+              onClick={handleNewNote}
+              id="new-note-button"
+            >
+              <span className="plus-icon">+</span>
+              New Note
+            </button>
+            <button
+              className="action-btn settings-icon-btn"
+              onClick={() => setShowSettings(true)}
+              id="settings-button"
+              title="App Settings"
+              style={{ padding: '0 16px', fontSize: '18px' }}
+            >
+              ⚙
+            </button>
+          </div>
 
-      {/* ── Action Bar ──────────────────────────────── */}
-      <div className="action-bar">
-        <button
-          className="new-note-btn"
-          onClick={handleNewNote}
-          id="new-note-button"
-        >
-          <span className="plus-icon">+</span>
-          New Note
-        </button>
-
-        <div className="action-bar-right" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div className="action-bar-right" style={{ display: 'flex', gap: '10px', alignItems: 'center', WebkitAppRegion: 'no-drag' }}>
           <select 
             className="action-select" 
-            value={sortOrder} 
-            onChange={(e) => setSortOrder(e.target.value)}
+            value={settings.sortOrder} 
+            onChange={(e) => updateSettings({ ...settings, sortOrder: e.target.value })}
           >
             <option value="newest">Sort: Newest</option>
             <option value="oldest">Sort: Oldest</option>
           </select>
           <button 
             className="action-btn" 
-            onClick={() => setViewMode(v => v === 'grid' ? 'list' : 'grid')}
-            title={viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'}
+            onClick={() => updateSettings({ ...settings, viewMode: settings.viewMode === 'grid' ? 'list' : 'grid' })}
+            title={settings.viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'}
           >
-            {viewMode === 'grid' ? '☰ List View' : '⊞ Grid View'} 
+            {settings.viewMode === 'grid' ? '☰ List View' : '⊞ Grid View'} 
           </button>
         </div>
       </div>
 
       {/* ── Notes ───────────────────────────────────── */}
-      <div className={`notes-${viewMode}`} id="notes-container">
+      <div className={`notes-${settings.viewMode}`} id="notes-container" style={notesStyle}>
         {sortedNotes.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">📝</div>
@@ -169,6 +166,13 @@ export default function App() {
           settings={settings}
           onSave={updateSettings}
           onClose={() => setShowSettings(false)}
+        />
+      )}
+
+      {/* ── Privacy Modal ───────────────────────────── */}
+      {!settings.hasSeenPrivacy && (
+        <PrivacyModal 
+          onAccept={() => updateSettings({ ...settings, hasSeenPrivacy: true })}
         />
       )}
       </div>

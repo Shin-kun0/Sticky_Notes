@@ -95,14 +95,28 @@ export default function NoteCard({
         {note.content || 'Empty note'}
       </div>
 
-      {/* Trash icon (hover-visible) */}
-      <button
-        className="card-btn delete-btn"
-        onClick={(e) => { e.stopPropagation(); setShowConfirm(true) }}
-        title="Delete note"
-      >
-        🗑️
-      </button>
+      {/* Export & Trash icons (hover-visible) */}
+      <div className="card-actions-bottom">
+        <button
+          className="card-btn export-btn"
+          onClick={async (e) => { 
+            e.stopPropagation(); 
+            if (window.api && window.api.exportSingleNote) {
+              await window.api.exportSingleNote(note.content || 'Empty note');
+            }
+          }}
+          title="Export note as .txt"
+        >
+          📤
+        </button>
+        <button
+          className="card-btn delete-btn"
+          onClick={(e) => { e.stopPropagation(); setShowConfirm(true) }}
+          title="Delete note"
+        >
+          🗑️
+        </button>
+      </div>
     </div>
   )
 }

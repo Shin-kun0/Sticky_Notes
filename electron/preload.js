@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld('api', {
   getAll: () => ipcRenderer.invoke('notes:getAll'),
   saveNotes: (notes) => ipcRenderer.invoke('notes:save', notes),
   saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
+  saveNotesSync: (notes) => ipcRenderer.sendSync('notes:saveSync', notes),
+  saveSettingsSync: (settings) => ipcRenderer.sendSync('settings:saveSync', settings),
 
   // ── Desktop window management (called from Manager) ─
   showOnDesktop: (noteId) => ipcRenderer.invoke('desktop:show', noteId),
@@ -16,6 +18,11 @@ contextBridge.exposeInMainWorld('api', {
 
   // ── System ───────────────────────────────────────────
   setStartup: (enabled) => ipcRenderer.invoke('startup:set', enabled),
+  uploadBackground: () => ipcRenderer.invoke('upload-background'),
+  deleteBackground: (filename) => ipcRenderer.invoke('delete-background', filename),
+  exportNotes: () => ipcRenderer.invoke('notes:export'),
+  exportSingleNote: (content) => ipcRenderer.invoke('notes:exportSingle', content),
+  importNotes: () => ipcRenderer.invoke('notes:import'),
 
   // ── Events from main process ─────────────────────────
   onNoteUpdated: (callback) => {
