@@ -2,11 +2,13 @@
   "name": "sticky-notes",
   "version": "1.0.0",
   "description": "Sticky Notes Desktop Application",
+  "author": "Sticky Notes Team",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
-    "preview": "electron-vite preview"
+    "preview": "electron-vite preview",
+    "dist": "electron-vite build && electron-builder"
   },
   "dependencies": {
     "@fontsource/caveat": "^5.2.8",
@@ -18,8 +20,27 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.5.2",
     "electron": "^36.3.0",
+    "electron-builder": "^26.15.3",
     "electron-vite": "^3.1.0",
-    "jimp": "^0.16.13",
     "vite": "^6.3.0"
+  },
+  "build": {
+    "appId": "com.stickynotes.app",
+    "productName": "Sticky Notes",
+    "directories": {
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   }
 }

@@ -25,3 +25,7 @@ out/
 *.sln
 *.sw?
 Thumbs.db
+
+# Environment Variables
+.env
+.env.*

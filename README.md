@@ -2,7 +2,7 @@
 
 A premium, modern desktop sticky notes application built with Electron, React, and Vite.
 
-![App Icon](./src/assets/app-icon.png)
+<img src="./src/assets/app-icon.png" alt="App Icon" width="128" />
 
 ## Features
 

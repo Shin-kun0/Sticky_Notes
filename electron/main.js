@@ -31,6 +31,7 @@ function createMainWindow() {
     icon: appIconAsset,
     backgroundColor: '#0a0a14',
     show: false,
+    autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

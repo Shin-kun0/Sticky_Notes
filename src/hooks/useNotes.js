@@ -31,6 +31,7 @@ export function useNotes() {
   const [notes, setNotes] = useState([])
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const saveTimerRef = useRef(null)
   const notesRef = useRef(notes)
@@ -55,6 +56,7 @@ export function useNotes() {
         setSettings(prev => ({ ...prev, ...data.settings }))
       } catch (err) {
         console.error('Failed to load:', err)
+        setError(err.message || 'Failed to load data')
       }
       setLoading(false)
     })()
@@ -194,6 +196,7 @@ export function useNotes() {
     notes,
     settings,
     loading,
+    error,
     createNote,
     updateNote,
     deleteNote,

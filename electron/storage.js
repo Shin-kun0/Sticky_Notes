@@ -72,5 +72,6 @@ export function saveData(data) {
     fs.renameSync(tmpFile, DATA_FILE)
   } catch (err) {
     console.error('Failed to save data:', err)
+    throw err
   }
 }
