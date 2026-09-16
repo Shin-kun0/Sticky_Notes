@@ -346,11 +346,52 @@ function setupIPC() {
     try {
       const dataStr = fs.readFileSync(result.filePaths[0], 'utf-8')
       const importedData = JSON.parse(dataStr)
-      if (!importedData.notes || !importedData.settings) {
-        return { error: 'Invalid backup file format.' }
+
+      // ── Structural validation ─────────────────────────
+      if (!Array.isArray(importedData.notes) || typeof importedData.settings !== 'object' || importedData.settings === null || Array.isArray(importedData.settings)) {
+        return { error: 'Invalid backup file format: notes must be an array and settings must be an object.' }
       }
-      
-      appData = importedData
+
+      // ── Sanitize notes ────────────────────────────────
+      const sanitizedNotes = importedData.notes.filter(note => {
+        return note && typeof note === 'object' && typeof note.id === 'string' && typeof note.content === 'string'
+      }).map(note => ({
+        ...note,
+        id: String(note.id),
+        content: String(note.content || ''),
+        color: typeof note.color === 'string' ? note.color : '#FFF176',
+        font: typeof note.font === 'string' ? note.font : 'Caveat',
+        fontSize: typeof note.fontSize === 'string' ? note.fontSize : 'medium',
+        noteSize: typeof note.noteSize === 'string' ? note.noteSize : 'medium',
+        showOnDesktop: typeof note.showOnDesktop === 'boolean' ? note.showOnDesktop : false,
+        lockedOnDesktop: typeof note.lockedOnDesktop === 'boolean' ? note.lockedOnDesktop : false,
+        alwaysOnTop: typeof note.alwaysOnTop === 'boolean' ? note.alwaysOnTop : false,
+        // Strip path-traversal sequences from backgroundImage
+        backgroundImage: typeof note.backgroundImage === 'string' && !note.backgroundImage.includes('..') ? note.backgroundImage : undefined
+      }))
+
+      // ── Sanitize settings ─────────────────────────────
+      const s = importedData.settings
+      const sanitizedSettings = {
+        launchOnStartup: typeof s.launchOnStartup === 'boolean' ? s.launchOnStartup : false,
+        showDesktopNotesOnLaunch: typeof s.showDesktopNotesOnLaunch === 'boolean' ? s.showDesktopNotesOnLaunch : true,
+        defaultColor: typeof s.defaultColor === 'string' ? s.defaultColor : '#FFF176',
+        defaultFont: typeof s.defaultFont === 'string' ? s.defaultFont : 'Caveat',
+        defaultFontSize: typeof s.defaultFontSize === 'string' ? s.defaultFontSize : 'medium',
+        defaultNoteSize: typeof s.defaultNoteSize === 'string' ? s.defaultNoteSize : 'medium',
+        defaultCustomWidth: typeof s.defaultCustomWidth === 'number' ? s.defaultCustomWidth : 220,
+        defaultCustomHeight: typeof s.defaultCustomHeight === 'number' ? s.defaultCustomHeight : 220,
+        defaultAlwaysOnTop: typeof s.defaultAlwaysOnTop === 'boolean' ? s.defaultAlwaysOnTop : false,
+        hasSeenPrivacy: typeof s.hasSeenPrivacy === 'boolean' ? s.hasSeenPrivacy : false,
+        backgroundImage: typeof s.backgroundImage === 'string' && !s.backgroundImage.includes('..') ? s.backgroundImage : 'none',
+        customBackgrounds: Array.isArray(s.customBackgrounds) ? s.customBackgrounds.filter(b => typeof b === 'string' && !b.includes('..')) : [],
+        uiScale: typeof s.uiScale === 'string' ? s.uiScale : 'default',
+        uiScaleCustom: typeof s.uiScaleCustom === 'number' ? s.uiScaleCustom : 100,
+        viewMode: typeof s.viewMode === 'string' ? s.viewMode : 'grid',
+        sortOrder: typeof s.sortOrder === 'string' ? s.sortOrder : 'newest'
+      }
+
+      appData = { notes: sanitizedNotes, settings: sanitizedSettings }
       saveData(appData)
       return { success: true, data: appData }
     } catch (err) {
@@ -364,13 +405,20 @@ function setupIPC() {
 // ────────────────────────────────────────────────────────
 
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'custom-bg', privileges: { secure: true, standard: true, supportFetchAPI: true, bypassCSP: true } }
+  { scheme: 'custom-bg', privileges: { secure: true, standard: true, supportFetchAPI: true } }
 ])
 
 app.whenReady().then(() => {
   protocol.handle('custom-bg', (request) => {
     const filename = decodeURIComponent(request.url.replace('custom-bg://', ''))
-    const fullPath = path.join(app.getPath('userData'), 'custom-backgrounds', filename)
+    const bgDir = path.resolve(app.getPath('userData'), 'custom-backgrounds')
+    const fullPath = path.resolve(bgDir, filename)
+
+    // Security: prevent path traversal — resolved path must stay within bgDir
+    if (!fullPath.startsWith(bgDir + path.sep) && fullPath !== bgDir) {
+      return new Response('Forbidden', { status: 403 })
+    }
+
     return net.fetch(url.pathToFileURL(fullPath).toString())
   })
 
@@ -407,7 +455,10 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
-  app.quit()
+  // On macOS, apps conventionally stay alive in the dock when all windows close
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
 })
 
 app.on('activate', () => {

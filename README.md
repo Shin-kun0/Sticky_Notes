@@ -49,11 +49,16 @@ npm run dev
 
 ### Building for Production
 
-To build the standalone executable for your operating system:
+To compile the source code (outputs to `out/`):
 ```bash
 npm run build
 ```
-The compiled artifacts will be placed in the `dist` directory.
+
+To build the standalone distributable installer for your operating system:
+```bash
+npm run dist
+```
+The installer will be placed in the `dist` directory.
 
 ## Architecture Highlights
 - **Preload Scripts**: Uses Electron's `contextBridge` to expose a safe, typed API to the React renderers.

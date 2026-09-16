@@ -14,6 +14,7 @@
     "@fontsource/caveat": "^5.2.8",
     "@fontsource/inter": "^5.2.8",
     "@fontsource/kalam": "^5.2.8",
+    "electron-log": "^5.4.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

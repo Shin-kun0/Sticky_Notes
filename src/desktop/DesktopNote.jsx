@@ -1,24 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import '../styles/desktop-note.css'
+import { isLightColor, FONT_SIZE_MAP } from '../utils/noteUtils'
 import starImg from '../assets/sketches/star.png'
 import flowerImg from '../assets/sketches/flower.png'
 import pencilImg from '../assets/sketches/pencil.png'
 import coffeeImg from '../assets/sketches/coffee.png'
 
 const SKETCHES = [starImg, flowerImg, pencilImg, coffeeImg]
-
-const FONT_SIZE_MAP = { small: 13, medium: 16, large: 20 }
-
-/**
- * Returns true if the hex colour is perceptually "light".
- */
-function isLightColor(hex) {
-  const c = hex.replace('#', '')
-  const r = parseInt(c.substring(0, 2), 16)
-  const g = parseInt(c.substring(2, 4), 16)
-  const b = parseInt(c.substring(4, 6), 16)
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55
-}
 
 /**
  * Standalone component rendered inside each frameless desktop BrowserWindow.

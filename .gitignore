@@ -9,10 +9,13 @@ lerna-debug.log*
 
 # Node
 node_modules
-dist
+dist/
 dist-ssr
 *.local
 out/
+
+# Spec / design documents (not shipped)
+sticky-notes-desktop-spec.md
 
 # Editor directories and files
 .vscode/*

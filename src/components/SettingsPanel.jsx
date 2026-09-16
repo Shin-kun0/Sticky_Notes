@@ -1,43 +1,5 @@
 import React, { useEffect } from 'react'
-
-const COLOR_PRESETS = [
-  { name: 'Yellow',   value: '#FFF176' },
-  { name: 'Pink',     value: '#F48FB1' },
-  { name: 'Mint',     value: '#80CBC4' },
-  { name: 'Sky Blue', value: '#81D4FA' },
-  { name: 'Lavender', value: '#CE93D8' },
-  { name: 'White',    value: '#FFFFFF' },
-]
-
-import bg1 from '../assets/backgrounds/bg-1.png?asset'
-import bg2 from '../assets/backgrounds/bg-2.png?asset'
-import bg3 from '../assets/backgrounds/bg-3.png?asset'
-import bg4 from '../assets/backgrounds/bg-4.png?asset'
-import bg5 from '../assets/backgrounds/bg-5.png?asset'
-
-const THEMES = [
-  { value: 'dark', label: 'Dark Mode' },
-  { value: 'light', label: 'Light Mode' },
-]
-
-const FONTS = [
-  { name: 'Inter',  label: 'Default (Inter)' },
-  { name: 'Caveat', label: 'Handwritten 1 (Caveat)' },
-  { name: 'Kalam',  label: 'Handwritten 2 (Kalam)' },
-]
-
-const FONT_SIZES = [
-  { value: 'small',  label: 'S' },
-  { value: 'medium', label: 'M' },
-  { value: 'large',  label: 'L' },
-]
-
-const NOTE_SIZES = [
-  { value: 'small',  label: 'Small (180×180)' },
-  { value: 'medium', label: 'Medium (220×220)' },
-  { value: 'large',  label: 'Large (280×280)' },
-  { value: 'custom', label: 'Custom...' },
-]
+import { COLOR_PRESETS, FONTS, FONT_SIZES, NOTE_SIZES } from '../utils/noteUtils'
 
 const BACKGROUNDS = [
   { value: 'none', label: 'None', url: 'none' },
@@ -153,7 +115,7 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
               id="default-font-select"
             >
               {FONTS.map(f => (
-                <option key={f.name} value={f.name}>{f.label}</option>
+                <option key={f.name} value={f.name} style={{ fontFamily: f.name }}>{f.label}</option>
               ))}
             </select>
           </div>

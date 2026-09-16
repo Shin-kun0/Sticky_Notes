@@ -1,33 +1,5 @@
 import React, { useRef, useEffect } from 'react'
-
-const COLOR_PRESETS = [
-  { name: 'Yellow',   value: '#FFF176' },
-  { name: 'Pink',     value: '#F48FB1' },
-  { name: 'Mint',     value: '#80CBC4' },
-  { name: 'Sky Blue', value: '#81D4FA' },
-  { name: 'Lavender', value: '#CE93D8' },
-  { name: 'White',    value: '#FFFFFF' },
-]
-
-const FONTS = [
-  { name: 'Caveat',           label: 'Caveat (Handwriting)' },
-  { name: 'Inter',            label: 'Inter (Clean)' },
-  { name: 'Courier New',      label: 'Courier New (Mono)' },
-  { name: 'Kalam',            label: 'Kalam (Marker)' },
-]
-
-const FONT_SIZES = [
-  { value: 'small',  label: 'S' },
-  { value: 'medium', label: 'M' },
-  { value: 'large',  label: 'L' },
-]
-
-const NOTE_SIZES = [
-  { value: 'small',  label: 'Small (180×180)' },
-  { value: 'medium', label: 'Medium (220×220)' },
-  { value: 'large',  label: 'Large (280×280)' },
-  { value: 'custom', label: 'Custom...' },
-]
+import { COLOR_PRESETS, FONTS, FONT_SIZES, NOTE_SIZES } from '../utils/noteUtils'
 
 export default function EditModal({
   note,

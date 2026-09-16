@@ -2,6 +2,7 @@ import { app } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import { randomUUID } from 'crypto'
+import log from 'electron-log'
 
 const DATA_DIR = path.join(app.getPath('appData'), 'StickyNotes')
 const DATA_FILE = path.join(DATA_DIR, 'notes.json')
@@ -40,6 +41,7 @@ function getDefaultData() {
 
 /**
  * Load data from disk. Creates default file on first launch.
+ * If the data file is corrupt, backs it up before returning defaults.
  */
 export function loadData() {
   try {
@@ -54,7 +56,18 @@ export function loadData() {
     const raw = fs.readFileSync(DATA_FILE, 'utf-8')
     return JSON.parse(raw)
   } catch (err) {
-    console.error('Failed to load data:', err)
+    log.error('Failed to load data:', err)
+
+    // Back up corrupt file before overwriting with defaults
+    try {
+      if (fs.existsSync(DATA_FILE)) {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+        const backupPath = `${DATA_FILE}.corrupt.${timestamp}`
+        fs.copyFileSync(DATA_FILE, backupPath)
+        log.warn(`Corrupt data file backed up to: ${backupPath}`)
+      }
+    } catch (_) { /* best-effort backup */ }
+
     return getDefaultData()
   }
 }
@@ -71,7 +84,7 @@ export function saveData(data) {
     fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), 'utf-8')
     fs.renameSync(tmpFile, DATA_FILE)
   } catch (err) {
-    console.error('Failed to save data:', err)
+    log.error('Failed to save data:', err)
     throw err
   }
 }

@@ -21,7 +21,7 @@ const BACKGROUND_MAP = {
 
 export default function App() {
   const {
-    notes, settings, loading,
+    notes, settings, loading, error,
     createNote, updateNote, deleteNote,
     toggleShowOnDesktop, toggleLock, togglePin,
     updateSettings
@@ -125,6 +125,17 @@ export default function App() {
           </button>
         </div>
       </div>
+
+      {/* ── Error Banner ────────────────────────────── */}
+      {error && (
+        <div className="error-banner" id="error-banner">
+          <span className="error-banner-icon">⚠</span>
+          <span className="error-banner-text">
+            Failed to load your notes — {error}. Your data file may be corrupted.
+            A backup was saved automatically.
+          </span>
+        </div>
+      )}
 
       {/* ── Notes ───────────────────────────────────── */}
       <div className={`notes-${settings.viewMode}`} id="notes-container" style={notesStyle}>
