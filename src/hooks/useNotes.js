@@ -44,7 +44,7 @@ export function useNotes() {
   // ── Load once on mount ─────────────────────────────
   useEffect(() => {
     if (!window.api) {
-      console.warn('window.api not available — running outside Electron')
+      if (import.meta.env.DEV) console.warn('window.api not available — running outside Electron')
       setLoading(false)
       return
     }

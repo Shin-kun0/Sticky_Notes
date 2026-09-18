@@ -4,6 +4,7 @@ import fs from 'fs'
 import crypto from 'crypto'
 import url from 'url'
 import appIconAsset from '../src/assets/app-icon.png?asset'
+import log from 'electron-log'
 import { loadData, saveData } from './storage.js'
 
 // ────────────────────────────────────────────────────────
@@ -262,24 +263,30 @@ function setupIPC() {
     if (result.canceled || result.filePaths.length === 0) return null
 
     const filePath = result.filePaths[0]
-    const stat = fs.statSync(filePath)
-    
-    // 5MB limit to prevent memory bloat and slow down
-    if (stat.size > 5 * 1024 * 1024) {
-      return { error: 'File size must be under 5MB.' }
+
+    try {
+      const stat = fs.statSync(filePath)
+
+      // 5MB limit to prevent memory bloat and slow down
+      if (stat.size > 5 * 1024 * 1024) {
+        return { error: 'File size must be under 5MB.' }
+      }
+
+      const userDataDir = app.getPath('userData')
+      const bgDir = path.join(userDataDir, 'custom-backgrounds')
+      if (!fs.existsSync(bgDir)) fs.mkdirSync(bgDir, { recursive: true })
+
+      const ext = path.extname(filePath)
+      const filename = crypto.randomUUID() + ext
+      const dest = path.join(bgDir, filename)
+
+      fs.copyFileSync(filePath, dest)
+
+      return { filename }
+    } catch (err) {
+      log.error('upload-background failed:', err.message)
+      return { error: 'Failed to process the selected file. It may have been moved or deleted.' }
     }
-
-    const userDataDir = app.getPath('userData')
-    const bgDir = path.join(userDataDir, 'custom-backgrounds')
-    if (!fs.existsSync(bgDir)) fs.mkdirSync(bgDir, { recursive: true })
-
-    const ext = path.extname(filePath)
-    const filename = crypto.randomUUID() + ext
-    const dest = path.join(bgDir, filename)
-
-    fs.copyFileSync(filePath, dest)
-
-    return { filename }
   })
 
   // Delete Custom Background

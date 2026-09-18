@@ -23,6 +23,8 @@ export default function DesktopNote() {
     // Fetch initial data
     window.api.getNoteData(noteId).then(data => {
       if (data) setNote(data)
+    }).catch(err => {
+      console.error('Failed to fetch note data:', err)
     })
 
     // Listen for real-time updates from the Manager

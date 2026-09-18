@@ -66,7 +66,7 @@ export function loadData() {
         fs.copyFileSync(DATA_FILE, backupPath)
         log.warn(`Corrupt data file backed up to: ${backupPath}`)
       }
-    } catch (_) { /* best-effort backup */ }
+    } catch (backupErr) { log.warn('Failed to back up corrupt data file:', backupErr.message) }
 
     return getDefaultData()
   }

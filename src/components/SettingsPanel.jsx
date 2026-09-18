@@ -1,5 +1,10 @@
 import React, { useEffect } from 'react'
 import { COLOR_PRESETS, FONTS, FONT_SIZES, NOTE_SIZES } from '../utils/noteUtils'
+import bg1 from '../assets/backgrounds/bg-1.png?asset'
+import bg2 from '../assets/backgrounds/bg-2.png?asset'
+import bg3 from '../assets/backgrounds/bg-3.png?asset'
+import bg4 from '../assets/backgrounds/bg-4.png?asset'
+import bg5 from '../assets/backgrounds/bg-5.png?asset'
 
 const BACKGROUNDS = [
   { value: 'none', label: 'None', url: 'none' },
