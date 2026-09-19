@@ -65,7 +65,10 @@ export default function DesktopNote() {
       )}
 
       {/* Content (read-only) */}
-      <div className={`desktop-note-content ${light ? 'dark-text' : 'light-text'}`}>
+      <div
+        className={`desktop-note-content ${light ? 'dark-text' : 'light-text'}`}
+        style={{ color: note.fontColor || undefined }}
+      >
         {note.content}
       </div>
 

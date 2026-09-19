@@ -7,20 +7,40 @@ export default function NoteCard({
   onToggleDesktop,
   onToggleLock,
   onTogglePin,
-  onDelete
+  onToggleAlwaysOnTop,
+  onDelete,
+  selectionMode = false,
+  selected = false,
+  onSelect
 }) {
   const [showConfirm, setShowConfirm] = useState(false)
   const light = isLightColor(note.color)
 
-  const stop = (fn) => (e) => { e.stopPropagation(); fn() }
+  const stop = (fn) => (e) => {
+    e.stopPropagation()
+    if (selectionMode) {
+      if (onSelect) onSelect(note.id)
+      return
+    }
+    fn()
+  }
+
+  const handleClick = () => {
+    if (selectionMode && onSelect) {
+      onSelect(note.id)
+    } else {
+      onClick()
+    }
+  }
 
   return (
     <div
-      className="note-card"
+      className={`note-card ${selectionMode ? 'selection-mode' : ''} ${selected ? 'selected' : ''}`}
       style={{ backgroundColor: note.color }}
-      onClick={onClick}
+      onClick={handleClick}
       id={`note-card-${note.id}`}
     >
+
       {/* Delete confirmation overlay */}
       {showConfirm && (
         <div className="delete-confirm">
@@ -55,7 +75,7 @@ export default function NoteCard({
         <button
           className={`card-btn lock-btn ${note.showOnDesktop ? 'visible' : ''} ${note.lockedOnDesktop ? 'active' : ''}`}
           onClick={stop(onToggleLock)}
-          title={note.lockedOnDesktop ? 'Unlock from desktop' : 'Lock on desktop'}
+          title={note.lockedOnDesktop ? 'Locked on desktop — cannot be removed until this option is off' : 'Lock on desktop — cannot be removed until this option is off'}
           style={{ visibility: note.showOnDesktop ? 'visible' : 'hidden' }}
         >
           {note.lockedOnDesktop ? '🔒' : '🔓'}
@@ -77,33 +97,45 @@ export default function NoteCard({
         className={`note-card-content ${light ? 'dark-text' : 'light-text'}`}
         style={{
           fontFamily: note.font,
-          fontSize: `${FONT_SIZE_MAP[note.fontSize] || 16}px`
+          fontSize: `${FONT_SIZE_MAP[note.fontSize] || 16}px`,
+          color: note.fontColor || undefined
         }}
       >
         {note.content || 'Empty note'}
       </div>
 
-      {/* Export & Trash icons (hover-visible) */}
-      <div className="card-actions-bottom">
+      {/* Bottom actions */}
+      <div className={`card-actions-bottom ${note.alwaysOnTop ? 'has-active' : ''}`}>
+        {/* Always on Top — downward arrow at bottom left */}
         <button
-          className="card-btn export-btn"
-          onClick={async (e) => { 
-            e.stopPropagation(); 
-            if (window.api && window.api.exportSingleNote) {
-              await window.api.exportSingleNote(note.content || 'Empty note');
-            }
-          }}
-          title="Export note as .txt"
+          className={`card-btn aot-btn ${note.alwaysOnTop ? 'active' : ''}`}
+          onClick={stop(onToggleAlwaysOnTop)}
+          title={note.alwaysOnTop ? 'Always on top: ON — click to turn off' : 'Always on top: OFF — click to keep this note above other windows'}
         >
-          📤
+          ⬇
         </button>
-        <button
-          className="card-btn delete-btn"
-          onClick={(e) => { e.stopPropagation(); setShowConfirm(true) }}
-          title="Delete note"
-        >
-          🗑️
-        </button>
+
+        <div className="card-actions-bottom-right">
+          <button
+            className="card-btn export-btn"
+            onClick={async (e) => { 
+              e.stopPropagation(); 
+              if (window.api && window.api.exportSingleNote) {
+                await window.api.exportSingleNote(note.content || 'Empty note', 'note.txt');
+              }
+            }}
+            title="Export note as .txt"
+          >
+            📤
+          </button>
+          <button
+            className="card-btn delete-btn"
+            onClick={(e) => { e.stopPropagation(); setShowConfirm(true) }}
+            title="Delete note"
+          >
+            🗑️
+          </button>
+        </div>
       </div>
     </div>
   )

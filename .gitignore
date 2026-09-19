@@ -16,6 +16,7 @@ out/
 
 # Spec / design documents (not shipped)
 sticky-notes-desktop-spec.md
+NEXT_SESSION.md
 
 # Editor directories and files
 .vscode/*

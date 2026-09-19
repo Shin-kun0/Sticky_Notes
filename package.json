@@ -1,6 +1,6 @@
 {
   "name": "sticky-notes",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Sticky Notes Desktop Application",
   "author": "Sticky Notes Team",
   "main": "./out/main/index.js",

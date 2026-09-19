@@ -70,6 +70,14 @@ body {
   flex-direction: column;
 }
 
+.app-content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100vh;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -257,6 +265,7 @@ body {
   padding: 0 24px 24px;
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
   align-content: start;
 }
 
@@ -268,6 +277,7 @@ body {
   padding: 0 24px 24px;
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
 }
 
 .notes-list .note-card {
@@ -448,15 +458,26 @@ body {
 .card-actions-bottom {
   position: absolute;
   bottom: 8px;
+  left: 8px;
   right: 8px;
   display: flex;
-  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
   opacity: 0;
   transition: opacity var(--transition-fast);
+  pointer-events: none;
 }
 
-.note-card:hover .card-actions-bottom {
+.note-card:hover .card-actions-bottom,
+.card-actions-bottom.has-active {
   opacity: 1;
+  pointer-events: auto;
+}
+
+.card-actions-bottom-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .delete-btn {
@@ -1026,4 +1047,241 @@ body {
 
 .save-btn:active {
   transform: translateY(0);
+}
+
+/* ── Size Validation Warning ───────────────────────────────────── */
+.size-warning {
+  font-size: 12px;
+  color: #f87171;
+  margin-top: 4px;
+  animation: fadeIn var(--transition-fast);
+}
+
+/* ── Selection Mode ────────────────────────────────────────────── */
+.selection-counter-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  padding: 0 14px;
+  height: 40px;
+  background: #1e1e2e;
+  border: 2px solid #ef4444;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.selection-delete-btn {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 10px rgba(220, 38, 38, 0.4) !important;
+}
+
+.selection-delete-btn:not(:disabled):hover {
+  background: #b91c1c !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.5) !important;
+}
+
+.selection-delete-btn:disabled {
+  background: #7f1d1d !important;
+  color: #fca5a5 !important;
+  opacity: 0.65 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+.selection-export-btn {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.4) !important;
+}
+
+.selection-export-btn:not(:disabled):hover {
+  background: #1d4ed8 !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.5) !important;
+}
+
+.selection-export-btn:disabled {
+  background: #1e3a8a !important;
+  color: #93c5fd !important;
+  opacity: 0.65 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+.active-selection {
+  background: #475569 !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+.active-selection:hover {
+  background: #334155 !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+.note-card.selection-mode {
+  cursor: pointer;
+}
+
+.note-card.selection-mode:hover {
+  transform: translateY(-2px);
+}
+
+.note-card.selection-mode:not(.selected):hover {
+  outline: 2px dashed rgba(239, 68, 68, 0.55);
+  outline-offset: -2px;
+}
+
+.note-card.selected {
+  outline: 3px solid #ef4444 !important;
+  outline-offset: -3px;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.5) !important;
+  transform: translateY(-2px) scale(1.01);
+}
+
+.note-card.selection-mode .card-btn {
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+.note-card.selection-mode .card-actions-bottom {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* ── Always on Top Button ──────────────────────────────────────── */
+.aot-btn {
+  font-size: 11px !important;
+  width: 22px !important;
+  height: 22px !important;
+}
+
+.aot-btn.active {
+  background: rgba(59, 130, 246, 0.25) !important;
+  color: #60a5fa !important;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.4);
+}
+
+/* ── Search Input ──────────────────────────────────────────────── */
+.search-input {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  width: 170px;
+  transition: all var(--transition-fast);
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-dim);
+  width: 210px;
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* ── Shortcuts Modal ───────────────────────────────────────────── */
+.shortcuts-modal-overlay {
+  z-index: 300 !important;
+}
+
+.shortcuts-modal {
+  width: 460px;
+}
+
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--transition-fast);
+}
+
+.shortcut-row:hover {
+  border-color: var(--border-light);
+}
+
+.shortcut-label {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.shortcut-key-btn {
+  padding: 4px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Inter', monospace;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-width: 100px;
+  text-align: center;
+}
+
+.shortcut-key-btn:hover {
+  border-color: var(--accent);
+}
+
+.shortcut-key-btn.capturing {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--text-primary);
+  animation: pulse 1.5s ease infinite;
+}
+
+.shortcut-reset-btn {
+  padding: 8px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.shortcut-reset-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-light);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }

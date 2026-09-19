@@ -21,7 +21,7 @@ contextBridge.exposeInMainWorld('api', {
   uploadBackground: () => ipcRenderer.invoke('upload-background'),
   deleteBackground: (filename) => ipcRenderer.invoke('delete-background', filename),
   exportNotes: () => ipcRenderer.invoke('notes:export'),
-  exportSingleNote: (content) => ipcRenderer.invoke('notes:exportSingle', content),
+  exportSingleNote: (content, defaultPath) => ipcRenderer.invoke('notes:exportSingle', content, defaultPath),
   importNotes: () => ipcRenderer.invoke('notes:import'),
 
   // ── Events from main process ─────────────────────────

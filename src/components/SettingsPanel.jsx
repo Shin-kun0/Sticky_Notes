@@ -23,7 +23,7 @@ const UI_SIZES = [
   { value: 'custom', label: 'Custom' }
 ]
 
-export default function SettingsPanel({ settings, onSave, onClose }) {
+export default function SettingsPanel({ settings, onSave, onClose, onOpenShortcuts }) {
   const update = (key, value) => onSave({ ...settings, [key]: value })
 
   // Close on Escape
@@ -70,18 +70,6 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
                 <span className="switch-slider" />
               </label>
             </div>
-            <div className="switch-row" title="Set newly created notes to stay on top of other windows by default">
-              <span className="switch-row-label">Default: Always on Top</span>
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={settings.defaultAlwaysOnTop || false}
-                  onChange={e => update('defaultAlwaysOnTop', e.target.checked)}
-                  id="default-always-on-top-toggle"
-                />
-                <span className="switch-slider" />
-              </label>
-            </div>
           </div>
 
           {/* ── Default Color ───────────────────────── */}
@@ -105,6 +93,39 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
                   onChange={e => update('defaultColor', e.target.value)}
                   title="Custom color"
                   id="default-color-picker"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ── Default Text Color ───────────────────── */}
+          <div className="settings-section">
+            <span className="settings-section-title">Default Text Color</span>
+            <div className="color-row">
+              {[
+                { name: 'Black', value: '#000000' },
+                { name: 'Dark Gray', value: '#333333' },
+                { name: 'White', value: '#FFFFFF' },
+                { name: 'Navy', value: '#1a237e' },
+                { name: 'Maroon', value: '#880e4f' },
+                { name: 'Forest', value: '#1b5e20' },
+              ].map(c => (
+                <button
+                  key={c.value}
+                  className={`color-swatch ${(settings.defaultFontColor || '#000000').toUpperCase() === c.value.toUpperCase() ? 'active' : ''}`}
+                  style={{ backgroundColor: c.value }}
+                  onClick={() => update('defaultFontColor', c.value)}
+                  title={c.name}
+                />
+              ))}
+              <div className="color-input-wrapper">
+                <input
+                  type="color"
+                  className="color-input"
+                  value={settings.defaultFontColor || '#000000'}
+                  onChange={e => update('defaultFontColor', e.target.value)}
+                  title="Custom text color"
+                  id="default-font-color-picker"
                 />
               </div>
             </div>
@@ -158,25 +179,49 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
               {settings.defaultNoteSize === 'custom' && (
                 <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     className="form-select"
                     style={{ width: '80px', minWidth: 'auto', padding: '8px' }}
-                    value={settings.defaultCustomWidth || 220}
-                    onChange={e => update('defaultCustomWidth', Number(e.target.value))}
-                    title="Width"
+                    value={settings.defaultCustomWidth !== undefined && settings.defaultCustomWidth !== null ? settings.defaultCustomWidth : ''}
+                    onChange={e => {
+                      const clean = e.target.value.replace(/[^0-9]/g, '')
+                      update('defaultCustomWidth', clean === '' ? '' : parseInt(clean, 10))
+                    }}
+                    onBlur={e => {
+                      const num = parseInt(e.target.value, 10)
+                      update('defaultCustomWidth', isNaN(num) ? 220 : Math.min(500, Math.max(100, num)))
+                    }}
+                    placeholder="220"
+                    title="Width (100–500)"
                   />
                   <span style={{ color: 'var(--text-secondary)' }}>×</span>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     className="form-select"
                     style={{ width: '80px', minWidth: 'auto', padding: '8px' }}
-                    value={settings.defaultCustomHeight || 220}
-                    onChange={e => update('defaultCustomHeight', Number(e.target.value))}
-                    title="Height"
+                    value={settings.defaultCustomHeight !== undefined && settings.defaultCustomHeight !== null ? settings.defaultCustomHeight : ''}
+                    onChange={e => {
+                      const clean = e.target.value.replace(/[^0-9]/g, '')
+                      update('defaultCustomHeight', clean === '' ? '' : parseInt(clean, 10))
+                    }}
+                    onBlur={e => {
+                      const num = parseInt(e.target.value, 10)
+                      update('defaultCustomHeight', isNaN(num) ? 220 : Math.min(500, Math.max(100, num)))
+                    }}
+                    placeholder="220"
+                    title="Height (100–500)"
                   />
                 </div>
               )}
             </div>
+            {settings.defaultNoteSize === 'custom' && (
+              !Number(settings.defaultCustomWidth) || Number(settings.defaultCustomWidth) < 100 || Number(settings.defaultCustomWidth) > 500 ||
+              !Number(settings.defaultCustomHeight) || Number(settings.defaultCustomHeight) < 100 || Number(settings.defaultCustomHeight) > 500
+            ) && (
+              <span className="size-warning">Size must be between 100×100 and 500×500</span>
+            )}
           </div>
 
           {/* ── Background Image ────────────────────── */}
@@ -311,6 +356,19 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
                 <span style={{ fontSize: '13px' }}>{settings.uiScaleCustom}%</span>
               </div>
             )}
+          </div>
+
+          {/* ── Note Shortcuts ─────────────────────── */}
+          <div className="settings-section">
+            <span className="settings-section-title">Keyboard Shortcuts</span>
+            <button
+              className="action-btn"
+              onClick={onOpenShortcuts}
+              style={{ width: '100%', justifyContent: 'center' }}
+              id="shortcuts-btn"
+            >
+              ⌨ Configure Shortcuts
+            </button>
           </div>
         </div>
       </aside>

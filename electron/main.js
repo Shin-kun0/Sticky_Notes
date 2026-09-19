@@ -123,6 +123,12 @@ function createDesktopNoteWindow(note) {
       appData.notes[idx].desktopY = ny
       saveData(appData)
     }
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('note:stateChanged', {
+        noteId: note.id,
+        changes: { desktopX: nx, desktopY: ny }
+      })
+    }
   })
 
   // Persist size after resize
@@ -136,6 +142,12 @@ function createDesktopNoteWindow(note) {
       appData.notes[idx].noteSize = 'custom'
       saveData(appData)
     }
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('note:stateChanged', {
+        noteId: note.id,
+        changes: { customWidth: nw, customHeight: nh, noteSize: 'custom' }
+      })
+    }
   })
 
   noteWin.on('closed', () => {
@@ -147,10 +159,20 @@ function createDesktopNoteWindow(note) {
 
 function closeDesktopNoteWindow(noteId) {
   const win = desktopWindows.get(noteId)
+  let nx, ny
   if (win && !win.isDestroyed()) {
+    // Persist final position before closing so re-open restores it
+    [nx, ny] = win.getPosition()
+    const idx = appData.notes.findIndex(n => n.id === noteId)
+    if (idx !== -1) {
+      appData.notes[idx].desktopX = nx
+      appData.notes[idx].desktopY = ny
+      saveData(appData)
+    }
     win.close()
   }
   desktopWindows.delete(noteId)
+  return { desktopX: nx, desktopY: ny }
 }
 
 // ────────────────────────────────────────────────────────
@@ -162,6 +184,18 @@ function setupIPC() {
 
   // Save notes array
   ipcMain.handle('notes:save', (_, notes) => {
+    // Preserve current positions of any active desktop windows so they aren't overwritten by stale React state
+    for (const [noteId, win] of desktopWindows) {
+      if (!win.isDestroyed()) {
+        const [curX, curY] = win.getPosition()
+        const incoming = notes.find(n => n.id === noteId)
+        if (incoming) {
+          incoming.desktopX = curX
+          incoming.desktopY = curY
+        }
+      }
+    }
+
     appData.notes = notes
     saveData(appData)
 
@@ -230,19 +264,30 @@ function setupIPC() {
 
   // User clicked X on a desktop note
   ipcMain.handle('desktop:closeFromNote', (_, noteId) => {
+    // Close window and get final position before close
+    const pos = closeDesktopNoteWindow(noteId)
+
     // Update data
     const idx = appData.notes.findIndex(n => n.id === noteId)
     if (idx !== -1) {
       appData.notes[idx].showOnDesktop = false
+      if (pos && pos.desktopX !== undefined) {
+        appData.notes[idx].desktopX = pos.desktopX
+        appData.notes[idx].desktopY = pos.desktopY
+      }
       saveData(appData)
     }
-    closeDesktopNoteWindow(noteId)
 
-    // Tell the Manager so it can update React state
+    // Tell the Manager so it can update React state with both showOnDesktop and final position
     if (mainWindow && !mainWindow.isDestroyed()) {
+      const changes = { showOnDesktop: false }
+      if (pos && pos.desktopX !== undefined) {
+        changes.desktopX = pos.desktopX
+        changes.desktopY = pos.desktopY
+      }
       mainWindow.webContents.send('note:stateChanged', {
         noteId,
-        changes: { showOnDesktop: false }
+        changes
       })
     }
   })
@@ -322,11 +367,11 @@ function setupIPC() {
     }
   })
 
-  // Export Single Note as TXT
-  ipcMain.handle('notes:exportSingle', async (_, content) => {
+  // Export Single / Multiple Notes as TXT
+  ipcMain.handle('notes:exportSingle', async (_, content, defaultPath = 'note.txt') => {
     const result = await dialog.showSaveDialog(mainWindow, {
-      title: 'Export Note',
-      defaultPath: 'note.txt',
+      title: 'Export Notes',
+      defaultPath,
       filters: [{ name: 'Text File', extensions: ['txt'] }]
     })
 
@@ -417,7 +462,8 @@ protocol.registerSchemesAsPrivileged([
 
 app.whenReady().then(() => {
   protocol.handle('custom-bg', (request) => {
-    const filename = decodeURIComponent(request.url.replace('custom-bg://', ''))
+    let filename = decodeURIComponent(request.url.replace(/^custom-bg:\/\/(\.\/)?/, ''))
+    filename = filename.replace(/[/\\]+$/, '')
     const bgDir = path.resolve(app.getPath('userData'), 'custom-backgrounds')
     const fullPath = path.resolve(bgDir, filename)
 

@@ -4,19 +4,25 @@ const DEFAULT_SETTINGS = {
   launchOnStartup: false,
   showDesktopNotesOnLaunch: true,
   defaultColor: '#FFF176',
+  defaultFontColor: '#000000',
   defaultFont: 'Caveat',
   defaultFontSize: 'medium',
   defaultNoteSize: 'medium',
   defaultCustomWidth: 220,
   defaultCustomHeight: 220,
-  defaultAlwaysOnTop: false,
   hasSeenPrivacy: false,
   backgroundImage: 'none',
   customBackgrounds: [],
   uiScale: 'default',
   uiScaleCustom: 100,
   viewMode: 'grid',
-  sortOrder: 'newest'
+  sortOrder: 'newest',
+  shortcuts: {
+    newNote: 'ctrl+n',
+    deleteNote: 'ctrl+d',
+    toggleSettings: 'ctrl+,',
+    toggleDesktop: 'ctrl+shift+d'
+  }
 }
 
 /**
@@ -101,6 +107,7 @@ export function useNotes() {
       id: crypto.randomUUID(),
       content: '',
       color: settings.defaultColor,
+      fontColor: settings.defaultFontColor || '#000000',
       font: settings.defaultFont,
       fontSize: settings.defaultFontSize,
       noteSize: settings.defaultNoteSize,
@@ -109,7 +116,7 @@ export function useNotes() {
       showOnDesktop: false,
       lockedOnDesktop: false,
       isPinned: false,
-      alwaysOnTop: settings.defaultAlwaysOnTop,
+      alwaysOnTop: false,
       desktopX: 100 + Math.floor(Math.random() * 300),
       desktopY: 100 + Math.floor(Math.random() * 300),
       createdAt: new Date().toISOString(),
@@ -139,6 +146,19 @@ export function useNotes() {
     setNotes(prev => prev.filter(n => n.id !== id))
   }, [])
 
+  // ── Delete Multiple ────────────────────────────────
+  const deleteMultiple = useCallback(async (ids) => {
+    const idSet = new Set(ids)
+    // Close desktop windows for any notes being deleted
+    for (const id of ids) {
+      const note = notesRef.current.find(n => n.id === id)
+      if (note?.showOnDesktop && window.api) {
+        await window.api.hideFromDesktop(id)
+      }
+    }
+    setNotes(prev => prev.filter(n => !idSet.has(n.id)))
+  }, [])
+
   // ── Toggle show-on-desktop (immediate save) ───────
   const toggleShowOnDesktop = useCallback(async (id) => {
     const note = notesRef.current.find(n => n.id === id)
@@ -165,14 +185,25 @@ export function useNotes() {
   }, [])
 
   // ── Toggle lock ────────────────────────────────────
-  const toggleLock = useCallback((id) => {
-    setNotes(prev =>
-      prev.map(n =>
-        n.id === id
-          ? { ...n, lockedOnDesktop: !n.lockedOnDesktop, updatedAt: new Date().toISOString() }
-          : n
-      )
+  const toggleLock = useCallback(async (id) => {
+    const updatedNotes = notesRef.current.map(n =>
+      n.id === id
+        ? { ...n, lockedOnDesktop: !n.lockedOnDesktop, updatedAt: new Date().toISOString() }
+        : n
     )
+    setNotes(updatedNotes)
+    if (window.api) await window.api.saveNotes(updatedNotes)
+  }, [])
+
+  // ── Toggle always on top ───────────────────────────
+  const toggleAlwaysOnTop = useCallback(async (id) => {
+    const updatedNotes = notesRef.current.map(n =>
+      n.id === id
+        ? { ...n, alwaysOnTop: !n.alwaysOnTop, updatedAt: new Date().toISOString() }
+        : n
+    )
+    setNotes(updatedNotes)
+    if (window.api) await window.api.saveNotes(updatedNotes)
   }, [])
 
   // ── Toggle pin ─────────────────────────────────────
@@ -200,8 +231,10 @@ export function useNotes() {
     createNote,
     updateNote,
     deleteNote,
+    deleteMultiple,
     toggleShowOnDesktop,
     toggleLock,
+    toggleAlwaysOnTop,
     togglePin,
     updateSettings
   }
