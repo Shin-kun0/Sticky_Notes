@@ -51,6 +51,15 @@ function createMainWindow() {
     mainWindow.show()
   })
 
+  mainWindow.on('close', (event) => {
+    // Close-to-tray: hide instead of quitting when the setting is enabled
+    if (appData?.settings?.closeToTray && mainWindow && !mainWindow.isDestroyed()) {
+      event.preventDefault()
+      mainWindow.hide()
+      return
+    }
+  })
+
   mainWindow.on('closed', () => {
     mainWindow = null
     // Close all desktop note windows when Manager closes
@@ -250,6 +259,21 @@ function setupIPC() {
   ipcMain.handle('desktop:show', (_, noteId) => {
     const note = appData.notes.find(n => n.id === noteId)
     if (note) createDesktopNoteWindow(note)
+  })
+
+  // Show a note on the desktop at a specific position (drag & drop)
+  ipcMain.handle('desktop:showAtPosition', (_, noteId, x, y) => {
+    const note = appData.notes.find(n => n.id === noteId)
+    if (note) {
+      // Update the note position in data before creating the window
+      const idx = appData.notes.findIndex(n => n.id === noteId)
+      if (idx !== -1) {
+        appData.notes[idx].desktopX = x
+        appData.notes[idx].desktopY = y
+        saveData(appData)
+      }
+      createDesktopNoteWindow({ ...note, desktopX: x, desktopY: y })
+    }
   })
 
   // Hide a note from the desktop
@@ -509,7 +533,8 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   // On macOS, apps conventionally stay alive in the dock when all windows close
-  if (process.platform !== 'darwin') {
+  // When close-to-tray is enabled, don't quit — the tray keeps the app alive
+  if (process.platform !== 'darwin' && !appData?.settings?.closeToTray) {
     app.quit()
   }
 })

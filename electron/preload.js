@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('api', {
 
   // ── Desktop window management (called from Manager) ─
   showOnDesktop: (noteId) => ipcRenderer.invoke('desktop:show', noteId),
+  showOnDesktopAt: (noteId, x, y) => ipcRenderer.invoke('desktop:showAtPosition', noteId, x, y),
   hideFromDesktop: (noteId) => ipcRenderer.invoke('desktop:hide', noteId),
 
   // ── Desktop note operations (called from desktop note renderer) ─

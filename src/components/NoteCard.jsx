@@ -11,7 +11,11 @@ export default function NoteCard({
   onDelete,
   selectionMode = false,
   selected = false,
-  onSelect
+  onSelect,
+  focused = false,
+  editing = false,
+  onDragStartCapture,
+  onDragEnd
 }) {
   const [showConfirm, setShowConfirm] = useState(false)
   const light = isLightColor(note.color)
@@ -35,10 +39,18 @@ export default function NoteCard({
 
   return (
     <div
-      className={`note-card ${selectionMode ? 'selection-mode' : ''} ${selected ? 'selected' : ''}`}
+      className={`note-card ${selectionMode ? 'selection-mode' : ''} ${selected ? 'selected' : ''} ${focused ? 'keyboard-focused' : ''} ${editing ? 'editing' : ''}`}
       style={{ backgroundColor: note.color }}
       onClick={handleClick}
       id={`note-card-${note.id}`}
+      draggable={!selectionMode}
+      onDragStart={(e) => {
+        if (selectionMode) { e.preventDefault(); return }
+        e.dataTransfer.setData('text/plain', note.id)
+        e.dataTransfer.effectAllowed = 'move'
+      }}
+      onDragStartCapture={onDragStartCapture}
+      onDragEnd={onDragEnd}
     >
 
       {/* Delete confirmation overlay */}

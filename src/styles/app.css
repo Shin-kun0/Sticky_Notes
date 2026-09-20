@@ -1285,3 +1285,33 @@ body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
 }
+
+/* ── Select All Button ─────────────────────────────────────────── */
+.selection-select-all-btn {
+  background: #059669 !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 10px rgba(5, 150, 105, 0.4) !important;
+}
+
+.selection-select-all-btn:hover {
+  background: #047857 !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(5, 150, 105, 0.5) !important;
+}
+
+/* ── Keyboard Focus & Editing Note Indicator (unified) ─────────── */
+.note-card.keyboard-focused,
+.note-card.editing {
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.5) !important;
+  transform: translateY(-2px) scale(1.01);
+}
+
+.note-card.keyboard-focused::before,
+.note-card.editing::before {
+  border: 3px dashed #ef4444 !important;
+  border-radius: var(--radius-md);
+  z-index: 20;
+}

@@ -70,6 +70,18 @@ export default function SettingsPanel({ settings, onSave, onClose, onOpenShortcu
                 <span className="switch-slider" />
               </label>
             </div>
+            <div className="switch-row" title="When closed, minimize to system tray instead of quitting. Use the tray icon to reopen.">
+              <span className="switch-row-label">Close to system tray</span>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={settings.closeToTray || false}
+                  onChange={e => update('closeToTray', e.target.checked)}
+                  id="close-to-tray-toggle"
+                />
+                <span className="switch-slider" />
+              </label>
+            </div>
           </div>
 
           {/* ── Default Color ───────────────────────── */}

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 const DEFAULT_SETTINGS = {
   launchOnStartup: false,
   showDesktopNotesOnLaunch: true,
+  closeToTray: false,
   defaultColor: '#FFF176',
   defaultFontColor: '#000000',
   defaultFont: 'Caveat',
@@ -21,7 +22,8 @@ const DEFAULT_SETTINGS = {
     newNote: 'ctrl+n',
     deleteNote: 'ctrl+d',
     toggleSettings: 'ctrl+,',
-    toggleDesktop: 'ctrl+shift+d'
+    toggleDesktop: 'ctrl+shift+d',
+    toggleEditMode: 'ctrl+e'
   }
 }
 
@@ -128,13 +130,23 @@ export function useNotes() {
 
   // ── Update ─────────────────────────────────────────
   const updateNote = useCallback((id, changes) => {
-    setNotes(prev =>
-      prev.map(n =>
+    setNotes(prev => {
+      const updated = prev.map(n =>
         n.id === id
           ? { ...n, ...changes, updatedAt: new Date().toISOString() }
           : n
       )
-    )
+
+      // Immediately save when the note is visible on desktop so changes
+      // (size, color, content, etc.) reflect in real-time without restart
+      const note = updated.find(n => n.id === id)
+      if (note?.showOnDesktop && window.api) {
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+        window.api.saveNotes(updated)
+      }
+
+      return updated
+    })
   }, [])
 
   // ── Delete ─────────────────────────────────────────
@@ -181,6 +193,25 @@ export function useNotes() {
       } else {
         await window.api.hideFromDesktop(id)
       }
+    }
+  }, [])
+
+  // ── Show on desktop at specific position (drag & drop) ─
+  const showOnDesktopAt = useCallback(async (id, x, y) => {
+    const note = notesRef.current.find(n => n.id === id)
+    if (!note || note.showOnDesktop) return // already on desktop
+
+    const updated = notesRef.current.map(n =>
+      n.id === id
+        ? { ...n, showOnDesktop: true, desktopX: x, desktopY: y, updatedAt: new Date().toISOString() }
+        : n
+    )
+    setNotes(updated)
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    if (window.api) {
+      await window.api.saveNotes(updated)
+      await window.api.showOnDesktopAt(id, x, y)
     }
   }, [])
 
@@ -233,6 +264,7 @@ export function useNotes() {
     deleteNote,
     deleteMultiple,
     toggleShowOnDesktop,
+    showOnDesktopAt,
     toggleLock,
     toggleAlwaysOnTop,
     togglePin,

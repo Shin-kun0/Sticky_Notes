@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNotes } from './hooks/useNotes'
 import NoteCard from './components/NoteCard'
 import EditModal from './components/EditModal'
@@ -24,7 +24,7 @@ export default function App() {
   const {
     notes, settings, loading, error,
     createNote, updateNote, deleteNote, deleteMultiple,
-    toggleShowOnDesktop, toggleLock, toggleAlwaysOnTop, togglePin,
+    toggleShowOnDesktop, showOnDesktopAt, toggleLock, toggleAlwaysOnTop, togglePin,
     updateSettings
   } = useNotes()
 
@@ -37,15 +37,21 @@ export default function App() {
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState(new Set())
 
+  // Track which note is "focused" for keyboard navigation in selection mode
+  const [focusedIndex, setFocusedIndex] = useState(-1)
+
   // Derive editing note from latest notes array (always in sync)
   const editingNote = editingNoteId
     ? notes.find(n => n.id === editingNoteId) || null
     : null
 
-  const handleNewNote = () => {
+  // ── Drag-to-desktop tracking ref ───────────────────
+  const dragNoteIdRef = useRef(null)
+
+  const handleNewNote = useCallback(() => {
     const note = createNote()
     setEditingNoteId(note.id)
-  }
+  }, [createNote])
 
   // ── Selection handlers ─────────────────────────────
   const handleToggleSelect = useCallback((id) => {
@@ -60,6 +66,7 @@ export default function App() {
   const handleExitSelection = () => {
     setSelectionMode(false)
     setSelectedIds(new Set())
+    setFocusedIndex(-1)
   }
 
   const handleDeleteSelected = async () => {
@@ -80,6 +87,62 @@ export default function App() {
     handleExitSelection()
   }
 
+  // ── Compute filtered notes (used by both render and shortcuts) ──
+  const sortedNotes = [...notes].sort((a, b) => {
+    if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+    const aTime = new Date(a.createdAt || 0).getTime()
+    const bTime = new Date(b.createdAt || 0).getTime()
+    return settings.sortOrder === 'newest' ? bTime - aTime : aTime - bTime
+  });
+
+  const filteredNotes = sortedNotes.filter(note =>
+    !searchQuery.trim() || (note.content || '').toLowerCase().includes(searchQuery.toLowerCase().trim())
+  );
+
+  // ── Select All handler ─────────────────────────────
+  const handleSelectAll = useCallback(() => {
+    const allVisibleIds = new Set(filteredNotes.map(n => n.id))
+    setSelectedIds(prev => {
+      // If all are already selected, deselect all (toggle behavior)
+      const allSelected = filteredNotes.every(n => prev.has(n.id))
+      return allSelected ? new Set() : allVisibleIds
+    })
+  }, [filteredNotes])
+
+  // ── Drag-to-desktop handlers ───────────────────────
+  const handleDragStart = useCallback((e) => {
+    // Capture the note ID from the drag event (set by NoteCard)
+    const noteId = e.dataTransfer.getData('text/plain') || e.target.closest('.note-card')?.id?.replace('note-card-', '')
+    if (noteId) dragNoteIdRef.current = noteId
+  }, [])
+
+  const handleDragEnd = useCallback((e) => {
+    const noteId = dragNoteIdRef.current
+    dragNoteIdRef.current = null
+    if (!noteId) return
+
+    // Detect if the note was dropped outside the app window
+    // When dragged outside, the drop target is outside the window and
+    // the coordinates relative to the viewport will be outside bounds
+    const { screenX, screenY } = e
+    const windowBounds = {
+      left: window.screenX,
+      top: window.screenY,
+      right: window.screenX + window.innerWidth,
+      bottom: window.screenY + window.innerHeight,
+    }
+
+    const droppedOutside =
+      screenX < windowBounds.left ||
+      screenX > windowBounds.right ||
+      screenY < windowBounds.top ||
+      screenY > windowBounds.bottom
+
+    if (droppedOutside) {
+      showOnDesktopAt(noteId, screenX, screenY)
+    }
+  }, [showOnDesktopAt])
+
   // ── Keyboard shortcuts ─────────────────────────────
   useEffect(() => {
     const shortcuts = settings.shortcuts || {}
@@ -92,11 +155,16 @@ export default function App() {
       const needShift = parts.includes('shift')
       const needAlt = parts.includes('alt')
 
+      // Normalize the event key for comparison
+      let eventKey = e.key.toLowerCase()
+      // Handle special keys that may differ
+      if (eventKey === ' ') eventKey = 'space'
+
       return (
         (e.ctrlKey || e.metaKey) === needCtrl &&
         e.shiftKey === needShift &&
         e.altKey === needAlt &&
-        e.key.toLowerCase() === key
+        eventKey === key
       )
     }
 
@@ -124,12 +192,39 @@ export default function App() {
         if (editingNoteId) {
           toggleShowOnDesktop(editingNoteId)
         }
+      } else if (matchesShortcut(e, shortcuts.toggleEditMode)) {
+        e.preventDefault()
+        if (selectionMode) {
+          handleExitSelection()
+        } else {
+          setSelectionMode(true)
+          setFocusedIndex(0)
+        }
+      }
+
+      // ── Keyboard navigation in selection mode ────────
+      if (selectionMode && filteredNotes.length > 0) {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          e.preventDefault()
+          setFocusedIndex(prev => Math.min(prev + 1, filteredNotes.length - 1))
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          e.preventDefault()
+          setFocusedIndex(prev => Math.max(prev - 1, 0))
+        } else if (e.key === ' ' && focusedIndex >= 0 && focusedIndex < filteredNotes.length) {
+          e.preventDefault()
+          handleToggleSelect(filteredNotes[focusedIndex].id)
+        } else if (e.key === 'a' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault()
+          handleSelectAll()
+        }
       }
     }
 
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [settings.shortcuts, editingNoteId, selectionMode, selectedIds])
+  }, [settings.shortcuts, editingNoteId, selectionMode, selectedIds, handleNewNote,
+      filteredNotes, focusedIndex, handleToggleSelect, handleSelectAll,
+      deleteNote, toggleShowOnDesktop, handleDeleteSelected])
 
   // ── Loading state ──────────────────────────────────
   if (loading) {
@@ -139,17 +234,6 @@ export default function App() {
       </div>
     )
   }
-
-  const sortedNotes = [...notes].sort((a, b) => {
-    if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
-    const aTime = new Date(a.createdAt || 0).getTime()
-    const bTime = new Date(b.createdAt || 0).getTime()
-    return settings.sortOrder === 'newest' ? bTime - aTime : aTime - bTime
-  });
-
-  const filteredNotes = sortedNotes.filter(note =>
-    !searchQuery.trim() || (note.content || '').toLowerCase().includes(searchQuery.toLowerCase().trim())
-  );
 
   const resolvedBg = BACKGROUND_MAP[settings.backgroundImage]
   const bgImageUrl = resolvedBg
@@ -223,10 +307,18 @@ export default function App() {
         <div className="action-bar-right" style={{ display: 'flex', gap: '10px', alignItems: 'center', WebkitAppRegion: 'no-drag' }}>
           {selectionMode ? (
             <>
-              {/* Counter, Delete, and Export to the left of Cancel button */}
+              {/* Counter, Select All, Delete, and Export to the left of Cancel button */}
               <span className="selection-counter-text">
                 {selectedIds.size} selected
               </span>
+              <button
+                className="action-btn selection-select-all-btn"
+                onClick={handleSelectAll}
+                title={filteredNotes.every(n => selectedIds.has(n.id)) ? 'Deselect all notes' : 'Select all visible notes'}
+                id="bulk-select-all-btn"
+              >
+                {filteredNotes.every(n => selectedIds.has(n.id)) ? '☐ Deselect All' : '☑ Select All'}
+              </button>
               <button
                 className="action-btn selection-delete-btn"
                 onClick={handleDeleteSelected}
@@ -296,7 +388,13 @@ export default function App() {
       )}
 
       {/* ── Notes ───────────────────────────────────── */}
-      <div className={`notes-${settings.viewMode}`} id="notes-container" style={notesStyle}>
+      <div
+        className={`notes-${settings.viewMode}`}
+        id="notes-container"
+        style={notesStyle}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => e.preventDefault()}
+      >
         {filteredNotes.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">📝</div>
@@ -304,7 +402,7 @@ export default function App() {
             <p>{searchQuery.trim() ? 'Try a different search term' : 'Create one to get started!'}</p>
           </div>
         ) : (
-          filteredNotes.map(note => (
+          filteredNotes.map((note, idx) => (
             <NoteCard
               key={note.id}
               note={note}
@@ -317,6 +415,12 @@ export default function App() {
               selectionMode={selectionMode}
               selected={selectedIds.has(note.id)}
               onSelect={handleToggleSelect}
+              focused={selectionMode && focusedIndex === idx}
+              editing={editingNoteId === note.id}
+              onDragStartCapture={(e) => {
+                dragNoteIdRef.current = note.id
+              }}
+              onDragEnd={handleDragEnd}
             />
           ))
         )}

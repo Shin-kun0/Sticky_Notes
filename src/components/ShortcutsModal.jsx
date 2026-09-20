@@ -4,14 +4,16 @@ const DEFAULT_SHORTCUTS = {
   newNote: 'ctrl+n',
   deleteNote: 'ctrl+d',
   toggleSettings: 'ctrl+,',
-  toggleDesktop: 'ctrl+shift+d'
+  toggleDesktop: 'ctrl+shift+d',
+  toggleEditMode: 'ctrl+e'
 }
 
 const SHORTCUT_LABELS = {
   newNote: 'New Note',
   deleteNote: 'Delete Selected Note',
   toggleSettings: 'Open / Close Settings',
-  toggleDesktop: 'Toggle Desktop for Selected Note'
+  toggleDesktop: 'Toggle Desktop for Selected Note',
+  toggleEditMode: 'Toggle Edit / Selection Mode'
 }
 
 function formatShortcut(shortcut) {
