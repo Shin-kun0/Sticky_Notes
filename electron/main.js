@@ -14,6 +14,7 @@ let mainWindow = null
 const desktopWindows = new Map() // noteId → BrowserWindow
 let appData = null
 let tray = null
+let isQuitting = false
 
 function getPreloadPath() {
   return path.join(__dirname, '../preload/index.js')
@@ -53,7 +54,8 @@ function createMainWindow() {
 
   mainWindow.on('close', (event) => {
     // Close-to-tray: hide instead of quitting when the setting is enabled
-    if (appData?.settings?.closeToTray && mainWindow && !mainWindow.isDestroyed()) {
+    // Skip interception when the user explicitly chose Quit from tray
+    if (!isQuitting && appData?.settings?.closeToTray && mainWindow && !mainWindow.isDestroyed()) {
       event.preventDefault()
       mainWindow.hide()
       return
@@ -521,7 +523,25 @@ app.whenReady().then(() => {
       else { mainWindow.show(); mainWindow.focus(); }
     }},
     { type: 'separator' },
-    { label: 'Quit', click: () => app.quit() }
+    { label: 'Quit', click: () => {
+      isQuitting = true
+      if (tray && !tray.isDestroyed()) {
+        tray.destroy()
+        tray = null
+      }
+      for (const [, win] of desktopWindows) {
+        if (!win.isDestroyed()) win.destroy()
+      }
+      desktopWindows.clear()
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.destroy()
+        mainWindow = null
+      }
+      app.quit()
+      setTimeout(() => {
+        app.exit(0)
+      }, 500)
+    }}
   ])
   tray.setContextMenu(contextMenu)
 
@@ -534,11 +554,33 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   // On macOS, apps conventionally stay alive in the dock when all windows close
   // When close-to-tray is enabled, don't quit — the tray keeps the app alive
-  if (process.platform !== 'darwin' && !appData?.settings?.closeToTray) {
-    app.quit()
+  if (process.platform !== 'darwin') {
+    if (isQuitting || !appData?.settings?.closeToTray) {
+      if (tray && !tray.isDestroyed()) {
+        tray.destroy()
+        tray = null
+      }
+      app.quit()
+    }
   }
 })
 
 app.on('activate', () => {
   if (mainWindow === null) createMainWindow()
 })
+
+app.on('before-quit', () => {
+  isQuitting = true
+  if (tray && !tray.isDestroyed()) {
+    tray.destroy()
+    tray = null
+  }
+})
+
+app.on('will-quit', () => {
+  if (tray && !tray.isDestroyed()) {
+    tray.destroy()
+    tray = null
+  }
+})
+
