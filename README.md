@@ -1,6 +1,6 @@
 # Sticky Notes Desktop App
 
-A premium, modern desktop sticky notes application built with Electron, React, and Vite.
+A Simple desktop sticky notes application built with Electron, React, and Vite.
 
 <img src="./src/assets/app-icon.png" alt="App Icon" width="128" />
 
